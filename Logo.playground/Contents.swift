@@ -9,13 +9,16 @@ class Turtle {
     var drawing: Bool = true
     var angle: CGFloat = 0.0
     
-    let body: SKSpriteNode!
+    let body: SKShapeNode!
     private let scene: SKScene!
     
     init(scene: SKScene, position: CGPoint) {
         self.scene = scene
-        // TODO set the turtle facing somewhere
-        self.body = SKSpriteNode(color: SKColor.redColor(), size: CGSizeMake(20, 20))
+    
+        self.body = SKShapeNode(path: Turtle.bodyShape(position), centered: true)
+        self.body.strokeColor = UIColor.redColor()
+        self.body.fillColor = UIColor.redColor()
+        self.body.lineWidth = 3
         self.body.position = position
     }
     
@@ -29,24 +32,55 @@ class Turtle {
         if(drawing) {
             drawLine(body.position, to: newPos)
         }
+        
+// TODO
+//        self.body.runAction(
+//            SKAction.moveTo(newPos, duration: 0.2)
+//        )
         body.position = newPos
     }
     
     private func rotate(angle: CGFloat) {
         self.angle += angle
+        
+// TODO
+//        self.body.runAction(
+//            SKAction.rotateByAngle((angle * CGFloat(M_PI)/180.0), duration: 0.2)
+//        )
+        self.body.zRotation = (angle * CGFloat(M_PI)/180.0)
     }
     
     private func setDrawing(drawing: Bool) {
         self.drawing = drawing
     }
     
+    private static func bodyShape(position: CGPoint) -> CGPath {
+        let path = UIBezierPath()
+        
+        let side: CGFloat = 10
+        
+        path.moveToPoint(CGPointMake(position.x, position.y+side))
+        path.addLineToPoint(CGPointMake(position.x-side, position.y-side))
+        path.addLineToPoint(CGPointMake(position.x+side, position.y-side))
+        path.addLineToPoint(CGPointMake(position.x, position.y+side))
+        path.closePath()
+        
+        return path.CGPath
+        
+//        var trianglePath = UIBezierPath()
+//        trianglePath.moveToPoint(CGPointMake(100, 0))
+//        trianglePath.addLineToPoint(CGPointMake(150, 200))
+//        trianglePath.addLineToPoint(CGPointMake(50, 200))
+//        trianglePath.addLineToPoint(CGPointMake(100, 0))
+        
+    }
     
     private func drawLine(from: CGPoint, to: CGPoint) {
-        let path = CGPathCreateMutable()
-        CGPathMoveToPoint(path, nil, from.x, from.y)
-        CGPathAddLineToPoint(path, nil, to.x, to.y)
+        let path = UIBezierPath()
+        path.moveToPoint(from)
+        path.addLineToPoint(to)
         
-        let line = SKShapeNode(path: path)
+        let line = SKShapeNode(path: path.CGPath)
         line.strokeColor = UIColor.redColor()
         line.lineWidth = 3
         scene.addChild(line)
@@ -92,7 +126,7 @@ class Interpreter {
         "right": CommandRepresentation(
             params: 1,
             eval: { suffix in
-            Command.Rotate(amount: CGFloat(Int(suffix[0])!))
+            Command.Rotate(amount: -CGFloat(Int(suffix[0])!))
             }
         ),
         "penup": CommandRepresentation(
@@ -291,12 +325,14 @@ view.presentScene(sandbox.scene)
 //view.addSubview(input)
 
 
+
+
 print(sandbox.execute("repeat 15 [penup forward 10 pendown forward 5] penup back 300"))
 //print(sandbox.execute("penup"))
 //print(sandbox.execute("forward 50"))
 //print(sandbox.execute("pendown"))
 //print(sandbox.execute("forward 100"))
-//print(sandbox.execute("right 90"))
+//print(sandbox.execute("right 45"))
 //print(sandbox.execute("forward 100"))
 //print(sandbox.execute("left 90"))
 //print(sandbox.execute("forward 200"))
