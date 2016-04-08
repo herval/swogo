@@ -14,6 +14,7 @@ class Turtle {
     
     init(scene: SKScene, position: CGPoint) {
         self.scene = scene
+        // TODO set the turtle facing somewhere
         self.body = SKSpriteNode(color: SKColor.redColor(), size: CGSizeMake(20, 20))
         self.body.position = position
     }
@@ -58,62 +59,130 @@ enum Command {
     case Rotate(amount: CGFloat)
     case PenUp
     case PenDown
+    case Repeat(times: Int, commands: Array<Command>)
 }
 
 class Interpreter {
     
-//    let expressions: Dictionary<String, NSRegularExpression>
     
-    let commands: Dictionary<String, (String) -> (Command)> = [
-        "forward": { suffix in
-            Command.Move(
-                amount: Int(suffix)!
-            )
-        },
-        "back": { suffix in
-            Command.Move(
-                amount: -Int(suffix)!
-            )
-        },
-        "left": { suffix in
-            Command.Rotate(
-                amount: CGFloat(Int(suffix)!)
-            )
-        },
-        "right": { suffix in
-            Command.Rotate(
-                amount: CGFloat(Int(suffix)!)
-            )
-        },
-        "penup": { _ in
-            Command.PenUp
-        },
-        "pendown": { _ in
-            Command.PenDown
-        }
+    struct CommandRepresentation {
+        let params: Int
+        let eval: ([String]) -> (Command)
+    }
+    
+    private static let commands: Dictionary<String, CommandRepresentation> = [
+        "forward": CommandRepresentation(
+            params: 1,
+            eval: { suffix in
+                Command.Move(amount: Int(suffix[0])!)
+            }
+        ),
+        "back": CommandRepresentation(
+            params: 1,
+            eval: { suffix in
+                Command.Move(amount: -Int(suffix[0])!)
+            }
+        ),
+        "left": CommandRepresentation(
+            params: 1,
+            eval: { suffix in
+                Command.Rotate(amount: CGFloat(Int(suffix[0])!))
+            }
+        ),
+        "right": CommandRepresentation(
+            params: 1,
+            eval: { suffix in
+            Command.Rotate(amount: CGFloat(Int(suffix[0])!))
+            }
+        ),
+        "penup": CommandRepresentation(
+            params: 0,
+            eval: { _ in Command.PenUp }
+        ),
+        "pendown": CommandRepresentation(
+            params: 0,
+            eval: { _ in Command.PenDown }
+        ),
+        "repeat": CommandRepresentation(
+            params: 2,
+            eval: { countAndCommands in
+//                print("evaluating repeat: \(countAndCommands)")
+                
+                let count = Int(countAndCommands[0])!
+                let commands = Interpreter.split(countAndCommands[1])
+//                print("block: \(commands)")
+                
+                let parsed = Interpreter.parseAll(commands)
+//                print(parsed)
+                return Command.Repeat(times: count, commands: parsed)
+            }
+        )
     ]
     
-    init() {
-//        try! expressions = [
-//            "forward": NSRegularExpression(pattern: "(forward|fd) (\\d+)", options: [])
-//        ]
+    private static func parseAll(tokens: Array<String>) -> [Command] {
+        var cmds: Array<Command> = []
+        var i = 0
+        
+//        print(tokens)
+        while(i <= tokens.count-1) {
+            guard let cmd = Interpreter.commands[tokens[i]] else {
+                // no command found - fail the entire parsing
+                return []
+            }
+            
+            // consume the command + params
+//            print(tokens)
+            let params = Array(tokens[(i+1)..<(i+1+cmd.params)])
+            let command = cmd.eval(params)
+            cmds.append(command)
+            
+            i += cmd.params+1
+        }
+        
+        return cmds
     }
     
-    func param() {
-        
-    }
-    
-    func parse(command: String) -> Command? {
-        // TODO REGEXP
-        
-        
-        for key in commands.keys {
-            if(command.hasPrefix(key)) {
-                let params = command.stringByReplacingOccurrencesOfString(key, withString: "").stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
-                
-                return commands[key]!(params)
+    private static func split(input: String) -> Array<String> {
+        var str = input
+        if(str.hasPrefix("[")) { // unwrapping a list
+//            print("unwrapping list: \(str)")
+            str = String(str.characters.dropFirst().dropLast())
+        }
+        let parts = str.componentsSeparatedByString(" ")
+        var tokens: Array<String> = []
+        var i = 0
+        while(i <= parts.count-1) {
+            if(parts[i].hasPrefix("[")) { // keep a list as a single string, instead of breaking it down
+                let j = parts.indexOf { str in
+                    str.hasSuffix("]")
+                }!
+                let list = Array(parts[i..<(j+1)]).joinWithSeparator(" ")
+//                print("List: \(list)")
+                tokens.append(list)
+                i = j+1
+            } else {
+                tokens.append(parts[i])
+                i += 1
             }
         }
+        
+//        print("Final tokens: \(tokens)")
+        
+        return tokens
+    }
+    
+    func parse(command: String) -> [Command] {
+        
+        // TODO REGEXP
+        return Interpreter.parseAll(Interpreter.split(command)) // TODO handle [] blocks
+        
+//        for key in Interpreter.commands.keys {
+//            if(command.hasPrefix(key)) {
+//                let params = command.stringByReplacingOccurrencesOfString(key, withString: "").stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
+//                
+//                return Interpreter.commands[key]!.eval(params)
+//            }
+//        }
         
 //        let fwd = matches(expressions["forward"]!, input: command)
 //        if(fwd.count > 0) {
@@ -127,12 +196,11 @@ class Interpreter {
 //        switch command {
 //        case /forward/: Command.Move(amount: 10)
 //        }
-        return Command.Move(amount: 10)
     }
     
-    private func matches(expression: NSRegularExpression, input: String) -> [NSTextCheckingResult] {
-        return expression.matchesInString(input, options: [], range: NSMakeRange(0, input.characters.count))
-    }
+//    private func matches(expression: NSRegularExpression, input: String) -> [NSTextCheckingResult] {
+//        return expression.matchesInString(input, options: [], range: NSMakeRange(0, input.characters.count))
+//    }
 }
 
 
@@ -151,16 +219,29 @@ class Sandbox {
     }
     
     func execute(command: String) -> String {
-        guard let cmd = interpreter.parse(command) else {
-            return "Don't recognize \(command)!"
+        let cmd = interpreter.parse(command)
+        if(cmd.isEmpty) {
+            return "Don't recognize \(command)"
         }
-        switch cmd {
-            case .Move(let amount): turtle.move(amount)
-            case .Rotate(let amount): turtle.rotate(amount)
-            case .PenUp: turtle.setDrawing(false)
-            case .PenDown: turtle.setDrawing(true)
+        cmd.forEach { c in
+            exec(c)
         }
         return "OK"
+    }
+    
+    private func exec(cmd: Command) {
+        switch cmd {
+        case .Move(let amount): turtle.move(amount)
+        case .Rotate(let amount): turtle.rotate(amount)
+        case .PenUp: turtle.setDrawing(false)
+        case .PenDown: turtle.setDrawing(true)
+        case .Repeat(let times, let commands):
+            (0..<times).forEach { _ in
+                commands.forEach { cmd in
+                    exec(cmd)
+                }
+            }
+        }
     }
 }
 
@@ -210,17 +291,20 @@ view.presentScene(sandbox.scene)
 //view.addSubview(input)
 
 
+print(sandbox.execute("repeat 15 [penup forward 10 pendown forward 5] penup back 300"))
+//print(sandbox.execute("penup"))
+//print(sandbox.execute("forward 50"))
+//print(sandbox.execute("pendown"))
+//print(sandbox.execute("forward 100"))
+//print(sandbox.execute("right 90"))
+//print(sandbox.execute("forward 100"))
+//print(sandbox.execute("left 90"))
+//print(sandbox.execute("forward 200"))
+//print(sandbox.execute("penup"))
+//print(sandbox.execute("back 300"))
 
-print(sandbox.execute("penup"))
-print(sandbox.execute("forward 50"))
-print(sandbox.execute("pendown"))
-print(sandbox.execute("forward 100"))
-print(sandbox.execute("right 90"))
-print(sandbox.execute("forward 100"))
-print(sandbox.execute("left 90"))
-print(sandbox.execute("forward 200"))
-print(sandbox.execute("penup"))
-print(sandbox.execute("back 300"))
+//print(sandbox.execute("repeat :count [penup forward 4 pendown forward 4]"))
+
 //print(sandbox.execute("forward 100"))
 //print(sandbox.execute("forward 150"))
 
