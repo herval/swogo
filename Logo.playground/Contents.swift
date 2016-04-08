@@ -319,17 +319,17 @@ XCPlaygroundPage.currentPage.liveView = app.view
 
 
 
-//print(sandbox.execute("repeat 15 [penup forward 10 pendown forward 5] penup back 300"))
-//print(sandbox.execute("penup"))
-//print(sandbox.execute("forward 50"))
-//print(sandbox.execute("pendown"))
-//print(sandbox.execute("forward 100"))
-//print(sandbox.execute("right 45"))
-//print(sandbox.execute("forward 100"))
-//print(sandbox.execute("left 90"))
-//print(sandbox.execute("forward 200"))
-//print(sandbox.execute("penup"))
-//print(sandbox.execute("back 300"))
+//print(app.sandbox.execute("repeat 15 [penup forward 10 pendown forward 5] penup back 300"))
+print(app.sandbox.execute("repeat 360 [forward 1 left 1]"))
+//print(app.sandbox.execute("forward 50"))
+//print(app.sandbox.execute("pendown"))
+//print(app.sandbox.execute("forward 100"))
+//print(app.sandbox.execute("right 45"))
+//print(app.sandbox.execute("forward 100"))
+//print(app.sandbox.execute("left 90"))
+//print(app.sandbox.execute("forward 200"))
+//print(app.sandbox.execute("penup"))
+//print(app.sandbox.execute("back 300"))
 
 //print(sandbox.execute("repeat :count [penup forward 4 pendown forward 4]"))
 
