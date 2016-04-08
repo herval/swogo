@@ -66,13 +66,6 @@ class Turtle {
         path.closePath()
         
         return path.CGPath
-        
-//        var trianglePath = UIBezierPath()
-//        trianglePath.moveToPoint(CGPointMake(100, 0))
-//        trianglePath.addLineToPoint(CGPointMake(150, 200))
-//        trianglePath.addLineToPoint(CGPointMake(50, 200))
-//        trianglePath.addLineToPoint(CGPointMake(100, 0))
-        
     }
     
     private func drawLine(from: CGPoint, to: CGPoint) {
@@ -206,30 +199,7 @@ class Interpreter {
     }
     
     func parse(command: String) -> [Command] {
-        
-        // TODO REGEXP
-        return Interpreter.parseAll(Interpreter.split(command)) // TODO handle [] blocks
-        
-//        for key in Interpreter.commands.keys {
-//            if(command.hasPrefix(key)) {
-//                let params = command.stringByReplacingOccurrencesOfString(key, withString: "").stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
-//                
-//                return Interpreter.commands[key]!.eval(params)
-//            }
-//        }
-        
-//        let fwd = matches(expressions["forward"]!, input: command)
-//        if(fwd.count > 0) {
-//            fwd.forEach { r in
-//                print(command)
-//                print(r.rangeAtIndex(1))
-//            }
-//        }
-    
-        
-//        switch command {
-//        case /forward/: Command.Move(amount: 10)
-//        }
+        return Interpreter.parseAll(Interpreter.split(command))
     }
     
 //    private func matches(expression: NSRegularExpression, input: String) -> [NSTextCheckingResult] {
