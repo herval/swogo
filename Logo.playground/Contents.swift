@@ -7,7 +7,7 @@ import XCPlayground
 
 class Turtle {
     var drawing: Bool = true
-    var angle: CGFloat = 0.0
+    var angle: CGFloat = 90.0
     
     let body: SKShapeNode!
     private let scene: SKScene!
@@ -24,8 +24,8 @@ class Turtle {
     
     private func move(amount: Int) {
         // TODO animate the movement
-        let newX = body.position.x + (cos(angle) * CGFloat(amount))
-        let newY = body.position.y + (sin(angle) * CGFloat(amount))
+        let newX = body.position.x + (cos(radians(angle)) * CGFloat(amount))
+        let newY = body.position.y + (sin(radians(angle)) * CGFloat(amount))
 
         let newPos = CGPointMake(newX, newY)
         
@@ -47,7 +47,11 @@ class Turtle {
 //        self.body.runAction(
 //            SKAction.rotateByAngle((angle * CGFloat(M_PI)/180.0), duration: 0.2)
 //        )
-        self.body.zRotation = (angle * CGFloat(M_PI)/180.0)
+        self.body.zRotation = radians(angle)
+    }
+    
+    private func radians(angle: CGFloat) -> CGFloat {
+        return (angle * CGFloat(M_PI)/180.0)
     }
     
     private func setDrawing(drawing: Bool) {
@@ -214,7 +218,7 @@ class Sandbox {
     let interpreter: Interpreter!
     
     init(boardSize: CGSize) {
-        scene = SKScene(size: CGSizeMake(frame.width, frame.height))
+        scene = SKScene(size: boardSize)
         
         turtle = Turtle(scene: scene, position: CGPointMake(boardSize.width/2, boardSize.height/2))
         scene.addChild(turtle.body)
@@ -250,54 +254,72 @@ class Sandbox {
 }
 
 
+class App: NSObject, UITextFieldDelegate {
+    
+    var view: SKView!
+    var sandbox: Sandbox!
 
-let frame = CGRectMake(0, 0, 800, 800)
-let view = SKView(frame: frame)
-view.contentMode = .ScaleAspectFill
+    override init() {
+        super.init()
+        let frame = CGRectMake(0, 0, 800, 800)
+        view = SKView(frame: frame)
+        view.contentMode = .ScaleAspectFill
+        
+        sandbox = Sandbox(boardSize: CGSizeMake(800, 800))
+        view.presentScene(sandbox.scene)
 
-XCPlaygroundPage.currentPage.liveView = view
+        setupInput()
+    }
+    
+    private func setupInput() {
+        let input = UITextField(frame: CGRectMake(0, view.frame.height-30, view.frame.width, 30))
+        input.font = UIFont(name: "Courier New", size: 15)!
+        input.autocorrectionType = .No
+        input.autocapitalizationType = .None
+        input.attributedPlaceholder = NSAttributedString(
+            string: "Click here to enter your commands.",
+            attributes:[
+                NSForegroundColorAttributeName: UIColor.whiteColor(),
+                NSFontAttributeName: input.font!
+            ])
+        
+        input.textColor = UIColor.whiteColor()
+        input.backgroundColor = UIColor.blueColor()
+        
+        let handler = self
+        input.delegate = handler
+        
+        view.addSubview(input)
+    }
+    
+    func textFieldDidBeginEditing(textField: UITextField) {
+        textField.attributedPlaceholder = nil
+    }
+    
+    func textField(textField: UITextField, shouldChangeCharactersInRange range: NSRange, replacementString string: String) -> Bool {
+        guard let text = textField.text else {
+            return true
+        }
+        
+        if(string.hasSuffix("\n")) {
+            sandbox.execute(text)
+            textField.text = ""
+            return false
+        }
+        
+        return true
+    }
+
+}
 
 
 
-let sandbox = Sandbox(boardSize: CGSizeMake(800, 800))
-
-view.presentScene(sandbox.scene)
-
-
-
-//let input = UITextField(frame: CGRectMake(0, frame.height-30, frame.width, 30))
-//input.font = UIFont(name: "Courier New", size: 15)!
-//input.attributedPlaceholder = NSAttributedString(
-//    string: "Click here to enter your commands.",
-//    attributes:[
-//        NSForegroundColorAttributeName: UIColor.whiteColor(),
-//        NSFontAttributeName: input.font!
-//    ])
-//
-//input.textColor = UIColor.whiteColor()
-//input.backgroundColor = UIColor.blueColor()
-//
-//print("FOO")
-//
-//class KeyHandler: NSObject, UITextFieldDelegate {
-//    func textField(textField: UITextField, shouldChangeCharactersInRange range: NSRange, replacementString string: String) -> Bool {
-//        guard let text = textField.text else {
-//            return true
-//        }
-//        sandbox.execute(text)
-//        
-//        return true
-//    }
-//    
-//}
-//input.delegate = KeyHandler()
-//
-//view.addSubview(input)
+let app = App()
+XCPlaygroundPage.currentPage.liveView = app.view
 
 
 
-
-print(sandbox.execute("repeat 15 [penup forward 10 pendown forward 5] penup back 300"))
+//print(sandbox.execute("repeat 15 [penup forward 10 pendown forward 5] penup back 300"))
 //print(sandbox.execute("penup"))
 //print(sandbox.execute("forward 50"))
 //print(sandbox.execute("pendown"))
